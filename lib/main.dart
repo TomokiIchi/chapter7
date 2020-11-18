@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+
+import 'dart:async';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(new MyApp());
@@ -34,36 +37,95 @@ class FirstScreen extends StatefulWidget {
 }
 
 class _FirstScreenState extends State<FirstScreen> {
+  final _controller = TextEditingController();
+  final _fname = 'mydata.txt';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
       ),
-      body: Center(
-        child: Text("Home Screen"),
+      body: Column(
+        children: [
+          Text(
+            'Home Screen',
+          ),
+          Padding(
+            padding: EdgeInsets.all(20.0),
+          ),
+          TextField(
+            controller: _controller,
+          )
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
+        currentIndex: 0,
         items: [
           BottomNavigationBarItem(
-            title: Text('Home'),
-            icon: Icon(Icons.home),
+            title: Text('Save'),
+            icon: Icon(Icons.save),
           ),
           BottomNavigationBarItem(
-            title: Text('Next'),
-            icon: Icon(Icons.navigate_next),
+            title: Text('Load'),
+            icon: Icon(Icons.open_in_new),
           ),
         ],
         onTap: (int value) {
-          if (value == 1)
-            Navigator.pushNamed(
-              context,
-              '/second',
-            );
+          switch (value) {
+            case 0:
+              saveIt(_controller.text);
+              setState(() {
+                _controller.text = '';
+              });
+              showDialog(
+                  context: context,
+                  builder: (BuildContext context) => AlertDialog(
+                        title: Text('Saved!'),
+                        content: Text("Save message from file."),
+                      ));
+              break;
+            case 1:
+              setState(() {
+                loadIt().then((String value) {
+                  setState(() {
+                    _controller.text = value;
+                  });
+                  showDialog(
+                      context: context,
+                      builder: (BuildContext context) => AlertDialog(
+                            title: Text('Loaded!'),
+                            content: Text('Load message from file.'),
+                          ));
+                });
+              });
+              break;
+            default:
+              print('no default.');
+          }
         },
       ),
     );
+  }
+
+  Future<File> getDataFile(String filename) async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File(directory.path + '/' + filename);
+  }
+
+  void saveIt(String value) async {
+    getDataFile(_fname).then((File file) {
+      file.writeAsString(value);
+    });
+  }
+
+  Future<String> loadIt() async {
+    try {
+      final file = await getDataFile(_fname);
+      return file.readAsString();
+    } catch (e) {
+      return null;
+    }
   }
 }
 
