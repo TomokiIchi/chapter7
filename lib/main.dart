@@ -1,9 +1,5 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-
-import 'dart:ui' as ui;
 
 void main() {
   runApp(new MyApp());
@@ -20,82 +16,98 @@ class MyApp extends StatelessWidget {
         accentColor: const Color(0xFF2196f3),
         canvasColor: const Color(0xFFfafafa),
       ),
-      home: new MyHomePage(),
+      home: new FirstScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key}) : super(key: key);
+class FirstScreen extends StatefulWidget {
+  FirstScreen({Key key}) : super(key: key);
+
   @override
-  _MyHomePageState createState() => new _MyHomePageState();
+  _FirstScreenState createState() => new _FirstScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  GlobalKey _homeStateKey = GlobalKey();
-  Offset _pos;
-
-  @override
-  void initState() {
-    super.initState();
-  }
+class _FirstScreenState extends State<FirstScreen> {
+  final _controller = TextEditingController();
+  String _input;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
-        title: Text('MY APP'),
+        title: Text('Home'),
       ),
-      body: Center(
-        child: Listener(
-          onPointerDown: _pointerDown,
-          onPointerMove: _pointerMove,
-          child: CustomPaint(
-            key: _homeStateKey,
-            painter: MyPainter(_pos),
-            child: ConstrainedBox(
-              constraints: BoxConstraints.expand(),
-            ),
+      body: Column(
+        children: [
+          Text("Home Screen"),
+          Padding(
+            padding: EdgeInsets.all(10.0),
           ),
-        ),
+          TextField(
+            controller: _controller,
+            onChanged: changeField,
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1,
+        items: [
+          BottomNavigationBarItem(
+            title: Text('Home'),
+            icon: Icon(Icons.home),
+          ),
+          BottomNavigationBarItem(
+            title: Text('Next'),
+            icon: Icon(Icons.navigate_next),
+          ),
+        ],
+        onTap: (int value) {
+          if (value == 1)
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SecondScreen(_input)),
+            );
+        },
       ),
     );
   }
 
-  void _pointerDown(PointerDownEvent event) {
-    RenderBox referenceBox = _homeStateKey.currentContext.findRenderObject();
-    setState(() {
-      _pos = referenceBox.globalToLocal(event.position);
-    });
-  }
-
-  void _pointerMove(PointerMoveEvent event) {
-    RenderBox referenceBox = _homeStateKey.currentContext.findRenderObject();
-    setState(() {
-      _pos = referenceBox.globalToLocal(event.position);
-    });
-  }
+  void changeField(String val) => _input = val;
 }
 
-class MyPainter extends CustomPainter {
-  Offset _pos;
+class SecondScreen extends StatelessWidget {
+  final String _value;
 
-  MyPainter(this._pos);
+  SecondScreen(this._value);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    Paint p = Paint();
-    p.style = PaintingStyle.fill;
-    p.color = Color.fromARGB(25, 255, 0, 0);
-    if (_pos != null) {
-      for (var i = 0; i < 10; i++) {
-        canvas.drawCircle(_pos, 10.0 * i, p);
-      }
-      canvas.drawCircle(_pos, 50.0, p);
-    }
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Next'),
+      ),
+      body: Center(
+        child: Text(
+          'You typed: "$_value".',
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        items: [
+          BottomNavigationBarItem(
+            title: Text('prev'),
+            icon: Icon(Icons.navigate_before),
+          ),
+          BottomNavigationBarItem(
+            title: Text('?'),
+            icon: Icon(Icons.android),
+          ),
+        ],
+        onTap: (int value) {
+          if (value == 0) Navigator.pop(context);
+        },
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
