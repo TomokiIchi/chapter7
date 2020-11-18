@@ -16,6 +16,11 @@ class MyApp extends StatelessWidget {
         accentColor: const Color(0xFF2196f3),
         canvasColor: const Color(0xFFfafafa),
       ),
+      initialRoute: '/',
+      routes: {
+        '/second': (context) => SecondScreen('Second'),
+        '/third': (context) => SecondScreen('Third'),
+      },
       home: new FirstScreen(),
     );
   }
@@ -29,26 +34,14 @@ class FirstScreen extends StatefulWidget {
 }
 
 class _FirstScreenState extends State<FirstScreen> {
-  final _controller = TextEditingController();
-  String _input;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
       ),
-      body: Column(
-        children: [
-          Text("Home Screen"),
-          Padding(
-            padding: EdgeInsets.all(10.0),
-          ),
-          TextField(
-            controller: _controller,
-            onChanged: changeField,
-          ),
-        ],
+      body: Center(
+        child: Text("Home Screen"),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
@@ -64,16 +57,14 @@ class _FirstScreenState extends State<FirstScreen> {
         ],
         onTap: (int value) {
           if (value == 1)
-            Navigator.push(
+            Navigator.pushNamed(
               context,
-              MaterialPageRoute(builder: (context) => SecondScreen(_input)),
+              '/second',
             );
         },
       ),
     );
   }
-
-  void changeField(String val) => _input = val;
 }
 
 class SecondScreen extends StatelessWidget {
@@ -89,7 +80,7 @@ class SecondScreen extends StatelessWidget {
       ),
       body: Center(
         child: Text(
-          'You typed: "$_value".',
+          '"$_value" Screen',
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -106,6 +97,7 @@ class SecondScreen extends StatelessWidget {
         ],
         onTap: (int value) {
           if (value == 0) Navigator.pop(context);
+          if (value == 1) Navigator.pushNamed(context, '/third');
         },
       ),
     );
