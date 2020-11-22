@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-
 import 'dart:async';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 
 void main() {
   runApp(new MyApp());
@@ -21,10 +21,9 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/second': (context) => SecondScreen('Second'),
-        '/third': (context) => SecondScreen('Third'),
+        '/': (context) => FirstScreen(),
+        '/list': (context) => SecondScreen(),
       },
-      home: new FirstScreen(),
     );
   }
 }
@@ -37,131 +36,185 @@ class FirstScreen extends StatefulWidget {
 }
 
 class _FirstScreenState extends State<FirstScreen> {
-  final _controller = TextEditingController();
-  final _fname = 'mydata.txt';
+  final _controllerA = TextEditingController();
+  final _controllerB = TextEditingController();
+  final _controllerC = TextEditingController();
 
+  final TextStyle styleA = TextStyle(
+    fontSize: 28.0,
+    color: Colors.black87,
+  );
+  final TextStyle styleB = TextStyle(
+    fontSize: 24.0,
+    color: Colors.black87,
+  );
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
       ),
-      body: Column(
-        children: [
-          Text(
-            'Home Screen',
-          ),
-          Padding(
-            padding: EdgeInsets.all(20.0),
-          ),
-          TextField(
-            controller: _controller,
-          )
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: [
-          BottomNavigationBarItem(
-            title: Text('Save'),
-            icon: Icon(Icons.save),
-          ),
-          BottomNavigationBarItem(
-            title: Text('Load'),
-            icon: Icon(Icons.open_in_new),
-          ),
-        ],
-        onTap: (int value) {
-          switch (value) {
-            case 0:
-              saveIt(_controller.text);
-              setState(() {
-                _controller.text = '';
-              });
-              showDialog(
-                  context: context,
-                  builder: (BuildContext context) => AlertDialog(
-                        title: Text('Saved!'),
-                        content: Text("Save message from file."),
-                      ));
-              break;
-            case 1:
-              setState(() {
-                loadIt().then((String value) {
-                  setState(() {
-                    _controller.text = value;
-                  });
-                  showDialog(
-                      context: context,
-                      builder: (BuildContext context) => AlertDialog(
-                            title: Text('Loaded!'),
-                            content: Text('Load message from file.'),
-                          ));
-                });
-              });
-              break;
-            default:
-              print('no default.');
-          }
-        },
-      ),
-    );
-  }
-
-  Future<File> getDataFile(String filename) async {
-    final directory = await getApplicationDocumentsDirectory();
-    return File(directory.path + '/' + filename);
-  }
-
-  void saveIt(String value) async {
-    getDataFile(_fname).then((File file) {
-      file.writeAsString(value);
-    });
-  }
-
-  Future<String> loadIt() async {
-    try {
-      final file = await getDataFile(_fname);
-      return file.readAsString();
-    } catch (e) {
-      return null;
-    }
-  }
-}
-
-class SecondScreen extends StatelessWidget {
-  final String _value;
-
-  SecondScreen(this._value);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Next'),
-      ),
-      body: Center(
-        child: Text(
-          '"$_value" Screen',
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Text('Home Screen'),
+            Text(
+              'Name',
+              style: styleB,
+            ),
+            TextField(
+              controller: _controllerA,
+              style: styleA,
+            ),
+            Text(
+              'Mail',
+              style: styleB,
+            ),
+            TextField(
+              controller: _controllerB,
+              style: styleA,
+            ),
+            Text(
+              "Tel",
+              style: styleB,
+            ),
+            TextField(
+              controller: _controllerC,
+              style: styleA,
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
         items: [
           BottomNavigationBarItem(
-            title: Text('prev'),
-            icon: Icon(Icons.navigate_before),
+            title: Text('add'),
+            icon: Icon(Icons.home),
           ),
           BottomNavigationBarItem(
-            title: Text('?'),
-            icon: Icon(Icons.android),
+            title: Text('list'),
+            icon: Icon(Icons.list),
           ),
         ],
-        onTap: (int value) {
-          if (value == 0) Navigator.pop(context);
-          if (value == 1) Navigator.pushNamed(context, '/third');
+        onTap: (int index) {
+          if (index == 1) {
+            Navigator.pushNamed(context, '/list');
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.save),
+        onPressed: () {
+          saveData();
+          showDialog(
+              context: context,
+              builder: (BuildContext context) => AlertDialog(
+                    title: Text('saved.'),
+                    content: Text('insert data into database'),
+                  ));
         },
       ),
     );
+  }
+
+  void saveData() async {
+    String dbPath = await getDatabasesPath();
+    String path = join(dbPath, "mydata.db");
+
+    String data1 = _controllerA.text;
+    String data2 = _controllerB.text;
+    String data3 = _controllerC.text;
+
+    String query =
+        'INSERT INTO mydata(name, mail, tel) VALUES("$data1", "$data2", "$data3")';
+
+    Database database = await openDatabase(path, version: 1,
+        onCreate: (Database db, int version) async {
+      await db.execute(
+          "CREATE TABLE IF NOT EXISTS mydata (id INTEGER PRIMARY KEY, name TEXT, mail TEXT, tel TEXT)");
+    });
+    await database.transaction((txn) async {
+      int id = await txn.rawInsert(query);
+      print("insert: $id");
+    });
+
+    setState(() {
+      _controllerA.text = '';
+      _controllerB.text = '';
+      _controllerC.text = '';
+    });
+  }
+}
+
+class SecondScreen extends StatefulWidget {
+  SecondScreen({Key key}) : super(key: key);
+
+  @override
+  _SecondScreenState createState() => new _SecondScreenState();
+}
+
+class _SecondScreenState extends State<SecondScreen> {
+  List<Widget> _items = <Widget>[];
+
+  @override
+  void initState() {
+    super.initState();
+    getItems();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('List'),
+      ),
+      body: ListView(
+        children: _items,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1,
+        items: [
+          BottomNavigationBarItem(
+            title: Text('add'),
+            icon: Icon(Icons.home),
+          ),
+          BottomNavigationBarItem(
+            title: Text('list'),
+            icon: Icon(Icons.list),
+          ),
+        ],
+        onTap: (int index) {
+          if (index == 0) {
+            Navigator.pop(context);
+          }
+        },
+      ),
+    );
+  }
+
+  void getItems() async {
+    List<Widget> list = <Widget>[];
+    String dbPath = await getDatabasesPath();
+    String path = join(dbPath, "mydata.db");
+
+    Database database = await openDatabase(path, version: 1,
+        onCreate: (Database db, int version) async {
+      await db.execute(
+          "CREATE TABLE IF NOT EXISTS mydata (id INTEGER PRIMARY KEY, name TEXT, mail TEXT, tel TEXT))");
+    });
+
+    List<Map> result = await database.rawQuery('SELECT * FROM mydata');
+    for (Map item in result) {
+      list.add(ListTile(
+        title: Text(item['name']),
+        subtitle: Text(item['mail'] + ' ' + item['tel']),
+      ));
+    }
+    setState(() {
+      _items = list;
+    });
   }
 }
